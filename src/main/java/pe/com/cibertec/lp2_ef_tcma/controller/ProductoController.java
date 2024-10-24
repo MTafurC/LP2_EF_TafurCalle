@@ -170,4 +170,30 @@ public class ProductoController {
 		return "redirect:/productos";
 	}
 
+	@GetMapping("/generar_pdf")
+	public ResponseEntity<InputStreamResource> generarPDf(HttpSession session) throws IOException {
+		
+		if (session.getAttribute("usuario") == null) {
+			return null;
+		}
+		String correoSesion = session.getAttribute("usuario").toString();				
+		UsuarioEntity usuario = usuarioService.buscarUsuarioPorCorreo(correoSesion);
+		// formar los datos para pasarle al pdf
+		List<ProductoEntity> productoSesion = productoService.buscarTodosProductos();
+
+		Map<String, Object> datosPdf = new HashMap<String, Object>();
+		datosPdf.put("usuario", usuario);
+		datosPdf.put("productos", productoSesion);
+
+		ByteArrayInputStream pdfBytes = pdfService.generarPdf("template_pdf", datosPdf);
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.add("Content-Disposition", "inline; filename=productos.pdf");
+
+		return ResponseEntity.ok()
+				.headers(headers)
+				.contentType(MediaType.APPLICATION_PDF)
+				.body(new InputStreamResource(pdfBytes));
+	}
+
 }
